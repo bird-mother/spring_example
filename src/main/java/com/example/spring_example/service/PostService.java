@@ -37,4 +37,18 @@ public class PostService {
         return postRepository.findById(id)      // postRepository 에 있는 id 를 반환해
                 .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다. id : "+id));   // () -> 만약 값이 없으면 화살표 뒤에 예외를 던져
     }
+
+    // 게시글 수정
+    public Post updatePost(Long id, Post updatedPost){  // Post를 돌려주는 updatePost 라는 메서드인데, id랑 updatedPost(새로운 게시글)를 입력값으로 받는다
+        Post post = postRepository.findById(id)     // postRepository(DB 창구)한테 .findById(id)(이 번호로 게시글 찾아줘)라고 시킨다. 찾은 결과를 post(기존 게시글을 담을 그릇)에 담는다
+                .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다. id : "+id));   // 만약 못 찾으면 .orElseThrow(...)(에러를 던져라)가 실행된다
+
+        post.setTitle(updatedPost.getTitle());  // updatedPost(새 데이터)에서 제목을 꺼내서, post(기존 게시글)의 제목 자리에 덮어쓴다
+        post.setContent(updatedPost.getContent());  // updatedPost(새 데이터)에서 내용을 꺼내서, post(기존 게시글)의 내용 자리에 덮어쓴다
+        post.setUserName(updatedPost.getUserName());    // updatedPost(새 데이터)에서 작성자를 꺼내서, post(기존 게시글)의 작성자 자리에 덮어쓴다
+
+        return postRepository.save(post);   // 내용이 바뀐 **post**를 postRepository(DB 창구)한테 건네서 .save(...)(저장해줘)라고 시킨다. 이 post는 이미 id가 있는 상태라서, DB에는 새로 추가(INSERT)가 아니라 기존 걸 덮어쓰는(UPDATE)로 처리된다. 저장된 결과를 그대로 돌려준다
+    }
+
+    // 게시글 삭제
 }

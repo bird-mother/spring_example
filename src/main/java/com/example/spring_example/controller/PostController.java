@@ -31,4 +31,12 @@ public class PostController {
     public Post getPost(@PathVariable Long id){
         return postService.getPost(id);
     }
+
+    // 게시글 수정
+    @PutMapping("/{id}")   // PUT 방식으로, /{id}(주소 끝에 숫자가 붙는 형태, 예: /api/posts/1)로 요청이 들어오면 이 메서드를 실행
+    public Post updatePost(@PathVariable Long id, @RequestBody Post post){
+        // Post(게시글 모양)를 돌려주는 **updatePost**라는 메서드인데, @PathVariable Long id(주소에 붙은 숫자를 꺼내서 id라는 변수에 담고), @RequestBody Post post(요청 본문에 담긴 JSON 데이터를 꺼내서 post라는 변수에 담는다).
+    return postService.updatePost(id, post);
+        //postService(Service 계층)한테 .updatePost(id, post)(이 id의 게시글을, post 내용으로 수정해줘)라고 시키고, 그 결과를 그대로 돌려준다
+    }
 }
