@@ -1,0 +1,19 @@
+### 게시글 추가 테스트
+POST http://localhost:8080/api/posts
+Content-Type: application/json
+
+{
+  "title": "테스트 게시글4",
+  "content": "테스트 내용입니다4",
+  "userName": "박지성"
+}
+
+### 게시글 수정 테스트
+PUT http://localhost:8080/api/posts/1
+Content-Type: application/json
+
+{
+  "title": "수정된 제목",
+  "content": "수정된 내용",
+  "userName": "수정자"
+}
