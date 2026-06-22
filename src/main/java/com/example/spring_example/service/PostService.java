@@ -51,4 +51,7 @@ public class PostService {
     }
 
     // 게시글 삭제
+    public void deletePost(Long id){    // 반환 값이 없는(void) deletePost 메스드에 삭제할 게시글 id를 받는다
+        postRepository.deleteById(id);  // Repository에서 id가 같은 게시글을 삭제(deleteById) 하라고 시킴
+    }
 }

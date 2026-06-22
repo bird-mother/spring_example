@@ -39,4 +39,10 @@ public class PostController {
     return postService.updatePost(id, post);
         //postService(Service 계층)한테 .updatePost(id, post)(이 id의 게시글을, post 내용으로 수정해줘)라고 시키고, 그 결과를 그대로 돌려준다
     }
+
+    // 게시글 삭제
+    @DeleteMapping("/{id}")     // delete 방식을 사용할 때 주소 끝에 id 값이 들어오면, 아래 메서드를 실행
+    public void deletePost(@PathVariable long id){  // 반환 값이 없는 deletePost 메서드, 주소에 붙은 id 라는 숫자를 꺼내 변수에 담아
+        postService.deletePost(id);     // 서비스에 가서 id값과 똑같은 게시글을 지워
+    }
 }

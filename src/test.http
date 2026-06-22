@@ -3,9 +3,9 @@ POST http://localhost:8080/api/posts
 Content-Type: application/json
 
 {
-  "title": "테스트 게시글4",
-  "content": "테스트 내용입니다4",
-  "userName": "박지성"
+  "title": "테스트 게시글5",
+  "content": "테스트 내용입니다5",
+  "userName": "유재석"
 }
 
 ### 게시글 수정 테스트
@@ -17,3 +17,6 @@ Content-Type: application/json
   "content": "수정된 내용",
   "userName": "수정자"
 }
+
+### 게시글 삭제 테스트
+DELETE http://localhost:8080/api/posts/1
