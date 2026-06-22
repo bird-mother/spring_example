@@ -54,4 +54,10 @@ public class PostController {
     public void deletePost(@PathVariable long id){  // 반환 값이 없는 deletePost 메서드, 주소에 붙은 id 라는 숫자를 꺼내 변수에 담아
         postService.deletePost(id);     // 서비스에 가서 id값과 똑같은 게시글을 지워
     }
+
+    // 게시글 검색
+    @GetMapping("/search")      // GET 방식으로 /api/posts/search 주소로 요청이 오면 이 메서드를 실행해
+    public List<Post> searchPost(@RequestParam String keyword){     // post를 list로 돌려주는 searchPost 메서드에서 URL에 붙은 keywird를 꺼내
+        return postService.searchPost(keyword);     // 반환해. postService가 keyword로 검색한 게시글 목록을
+    }
 }

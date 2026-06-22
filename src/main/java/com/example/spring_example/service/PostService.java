@@ -73,4 +73,10 @@ public class PostService {
     public void deletePost(Long id){    // 반환 값이 없는(void) deletePost 메스드에 삭제할 게시글 id를 받는다
         postRepository.deleteById(id);  // Repository에서 id가 같은 게시글을 삭제(deleteById) 하라고 시킴
     }
+
+    // 게시글 검색(제목 키워드)
+    public List<Post> searchPost(String keyword){       // Post 목록을 담은 List를 돌려주는 메서드를 keyword를 입력값으로 받아
+        return postRepository.findByTitleContaining(keyword);       // 반환해. postRepository에서 keyword가 포함된 게시글 목록을
+
+    }
 }

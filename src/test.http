@@ -3,9 +3,9 @@ POST http://localhost:8080/api/posts
 Content-Type: application/json
 
 {
-  "title": "테스트 게시글12",
-  "content": "테스트 내용입니다12",
-  "userName": "이수근"
+  "title": "검색 테스트 게시글2",
+  "content": "검색 테스트 내용입니다2",
+  "userName": "작성자2"
 }
 
 ### 게시글 수정 테스트
@@ -53,3 +53,6 @@ GET http://localhost:8080/api/posts/2
 
 ### 게시글 페이징 조회 테스트
 GET http://localhost:8080/api/posts/paged?page=0&size=5
+
+### 게시글 검색 테스트
+GET http://localhost:8080/api/posts/search?keyword=검색
