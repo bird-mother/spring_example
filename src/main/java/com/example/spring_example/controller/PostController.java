@@ -3,6 +3,7 @@ package com.example.spring_example.controller;
 import com.example.spring_example.entity.Post;
 import com.example.spring_example.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,14 @@ public class PostController {
     @GetMapping                         // GET  /api/posts
     public List<Post> getAllPosts(){
         return postService.getAllPosts();    // Service 의 getAllPosts() 호출
+    }
+
+    // 게시글 페이징 조회
+    @GetMapping("/paged")       // GET 방식으로 /api/posts/paged 주소 요청이 오면 이 메서드를 실행
+    public Page<Post> getPagedPosts(  // 만들어, Page<Post>를 돌려주는 getPagedPosts라는 메서드를.
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size){       // 꺼내, URL 파라미터에서 page와 size를. 없으면 기본값 0, 10을 써
+        return postService.getPagedPosts(page, size);       // 반환해. postService에서 page와 size로 조회한 게시물
     }
 
     // 게시글 작성

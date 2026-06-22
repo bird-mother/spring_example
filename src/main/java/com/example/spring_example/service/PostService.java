@@ -3,6 +3,10 @@ package com.example.spring_example.service;
 import com.example.spring_example.entity.Post;
 import com.example.spring_example.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,15 +31,30 @@ public class PostService {
 //    Repository 의 메서드를 그대로 가져다 쓰는 부분이다
 //    Service는 Repository를 호출만 하고 실제 DB 처리는 JPA가 처리한다
 
+    // 게시글 전체 조회(페이징)
+    public Page<Post> getPagedPosts(int page, int size){        // 반환해라, page번째 페이지의 게시글 size개를
+                Pageable pageable = PageRequest.of(page, size, Sort.by("id")
+                        .descending());     //  만들어라, 페이지 요청 설정을, page번째, size개씩, id 내림차순으로
+        return postRepository.findAll(pageable);        // 반환해, postRepository에서 pageable 설정대로 조회한 게시글 목록을
+    }
+
     // 게시글 작성
     public Post createPost(Post post){
         return postRepository.save(post);           // Repository 의 save() 호출
     }
 
-    // 게시글 단건(1개) 조회
+//    // 게시글 단건(1개) 조회
+//    public Post getPost(Long id){       // Long 타입의 PK 로 설정한 id 를 post 에서 가져와
+//        return postRepository.findById(id)      // postRepository 에 있는 id 를 반환해
+//                .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다. id : "+id));   // () -> 만약 값이 없으면 화살표 뒤에 예외를 던져
+//    }
+
+    //게시글 단건 조회 및 조회수 증가
     public Post getPost(Long id){       // Long 타입의 PK 로 설정한 id 를 post 에서 가져와
-        return postRepository.findById(id)      // postRepository 에 있는 id 를 반환해
-                .orElseThrow(() -> new RuntimeException("게시글이 존재하지 않습니다. id : "+id));   // () -> 만약 값이 없으면 화살표 뒤에 예외를 던져
+        Post post = postRepository.findById(id)     //  찾아라, postRepository에서, id에 해당하는 게시글을
+                .orElseThrow(()->new RuntimeException("게시글이 존재하지 않습니다. id : "+id));     // 없으면 에러를 던져
+        post.setViewCount(post.getViewCount()+1);       // 바꿔라, post의 조회수를, 현재 조회수에 1을 더한 값으로
+        return postRepository.save(post);       // 반환해라, postRepository에 저장한 post를.
     }
 
     // 게시글 수정
