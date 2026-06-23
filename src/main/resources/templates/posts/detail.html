@@ -25,8 +25,22 @@
             <span th:text="'👁 ' + ${post.viewCount}"></span>
         </div>
 
-        <!--게시글 내용-->
-        <div class="post-content" th:text="${post.content}"></div>
+        <!--게시글 내용 - th:utext로 HTML 태그 렌더링-->
+        <div class="post-content" th:utext="${post.content}"></div>
+
+        <!--게시글 첨부파일 목록 - 첨부파일이 있을 때만 표시-->
+        <div class="attachment-section"
+             th:if="${attachments != null and !attachments.isEmpty()}">
+            <h4>첨부파일</h4>
+            <ul class="attachment-list">
+                <!--첨부파일 반복 렌더링-->
+                <li th:each="attachment : ${attachments}">
+                    <!--파일 다운로드 링크 - 클릭 시 파일 다운로드-->
+                    <a th:href="@{/api/attachments/download/{id}(id=${attachment.id})}"
+                       th:text="${attachment.originalFileName}"></a>
+                </li>
+            </ul>
+        </div>
 
         <!--게시글 버튼 영역-->
         <div class="post-actions">
@@ -35,7 +49,7 @@
                 <button class="edit-btn">수정</button>
             </a>
             <!--삭제 버튼 - 클릭 시 삭제 확인 후 API 호출-->
-            <button class="delete-btn" th:onclick="|deletePost(${post.id})|">삭제</button>
+            <button class="delete-btn" id="deletePostBtn">삭제</button>
             <!--목록으로 돌아가기 버튼-->
             <a href="/posts"><button class="list-btn">목록</button></a>
         </div>
@@ -48,10 +62,26 @@
 
         <!--댓글 작성 폼-->
         <div class="comment-form">
+            <!--댓글 작성자 입력창-->
             <input type="text" id="commentUserName" placeholder="작성자">
+            <!--댓글 내용 입력창-->
             <textarea id="commentContent" placeholder="댓글을 입력하세요"></textarea>
-            <button class="comment-submit-btn"
-                    th:onclick="|createComment(${post.id})|">댓글 작성</button>
+
+            <!--댓글 파일 첨부 영역-->
+            <div class="file-area">
+                <!--파일 선택 버튼 - 클릭 시 숨겨진 파일 입력창 열림-->
+                <label class="file-btn">
+                    파일/이미지 첨부
+                    <!--multiple로 여러 파일 동시 선택 가능-->
+                    <input type="file" id="commentFileInput"
+                           multiple style="display:none;">
+                </label>
+                <!--선택된 파일 목록 표시 영역-->
+                <div id="commentFileList" class="file-list"></div>
+            </div>
+
+            <!--댓글 작성 버튼 - id로 이벤트 처리-->
+            <button class="comment-submit-btn" id="commentSubmitBtn">댓글 작성</button>
         </div>
 
         <!--댓글 목록-->
@@ -76,24 +106,34 @@
                      th:id="|content-${comment.id}|"
                      th:text="${comment.content}"></div>
 
-                <!--댓글 수정 입력창 (기본 숨김)-->
+                <!--댓글 수정 입력창 (기본 숨김) - 태그 없이 텍스트만 표시-->
                 <textarea class="comment-edit-input"
                           th:id="|edit-${comment.id}|"
                           style="display:none;"
                           th:text="${comment.content}"></textarea>
 
+                <!--댓글 첨부파일 목록 - 댓글에 첨부파일이 있을 때만 표시-->
+                <div class="comment-attachments">
+                    <!--댓글 첨부파일 다운로드 링크-->
+                    <a class="comment-attachment-link"
+                       th:each="att : ${comment.attachments}"
+                       th:href="@{/api/attachments/download/{id}(id=${att.id})}"
+                       th:text="${att.originalFileName}"></a>
+                </div>
+
                 <div class="comment-actions">
                     <!--수정 버튼-->
                     <button class="comment-edit-btn"
+                            th:id="|edit-btn-${comment.id}|"
                             th:onclick="|showEditForm(${comment.id})|">수정</button>
                     <!--수정 완료 버튼 (기본 숨김)-->
                     <button class="comment-save-btn"
                             th:id="|save-${comment.id}|"
                             style="display:none;"
-                            th:onclick="|saveComment(${comment.id}, ${post.id})|">완료</button>
+                            th:onclick="|saveComment(${comment.id})|">완료</button>
                     <!--삭제 버튼-->
                     <button class="comment-delete-btn"
-                            th:onclick="|deleteComment(${comment.id}, ${post.id})|">삭제</button>
+                            th:onclick="|deleteComment(${comment.id})|">삭제</button>
                 </div>
             </div>
         </div>
@@ -136,6 +176,45 @@
         color: #333;                /* 글자색 */
         margin-bottom: 30px;        /* 아래 여백 */
         min-height: 100px;          /* 최소 높이 */
+    }
+
+    /* 첨부파일 영역 */
+    .attachment-section {
+        margin-bottom: 20px;        /* 아래 여백 */
+        padding: 12px 16px;         /* 안쪽 여백 */
+        background: #f8f9fa;        /* 배경색 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+    }
+
+    /* 첨부파일 제목 */
+    .attachment-section h4 {
+        font-size: 13px;            /* 글자 크기 */
+        color: #555;                /* 글자색 회색 */
+        margin-bottom: 8px;         /* 아래 여백 */
+    }
+
+    /* 첨부파일 목록 */
+    .attachment-list {
+        list-style: none;           /* 기본 목록 스타일 제거 */
+        padding: 0;                 /* 안쪽 여백 없음 */
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-wrap: wrap;            /* 공간 부족 시 자동 줄바꿈 */
+        gap: 8px;                   /* 파일 사이 간격 */
+    }
+
+    /* 첨부파일 링크 */
+    .attachment-list a {
+        padding: 4px 12px;          /* 안쪽 여백 */
+        background: #e8f4fd;        /* 배경색 연한 파란색 */
+        border-radius: 20px;        /* 모서리 크게 둥글게 */
+        font-size: 13px;            /* 글자 크기 */
+        color: #2980b9;             /* 글자색 파란색 */
+        text-decoration: none;      /* 밑줄 없음 */
+    }
+
+    /* 첨부파일 링크 호버 */
+    .attachment-list a:hover {
+        background: #d0e8f8;        /* 배경색 진한 파란색으로 변경 */
     }
 
     /* 게시글 버튼 영역 */
@@ -205,7 +284,7 @@
     }
 
     /* 댓글 작성자 입력창 */
-    .comment-form input {
+    .comment-form input[type="text"] {
         padding: 8px 12px;          /* 안쪽 여백 */
         border: 1px solid #ddd;     /* 테두리 연한 회색 */
         border-radius: 6px;         /* 모서리 둥글게 */
@@ -223,6 +302,59 @@
         outline: none;              /* 클릭 시 기본 테두리 제거 */
         resize: vertical;           /* 세로 방향으로만 크기 조절 가능 */
         min-height: 80px;           /* 최소 높이 */
+    }
+
+    /* 파일 첨부 영역 */
+    .file-area {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-direction: column;     /* 세로 방향으로 배치 */
+        gap: 6px;                   /* 요소 사이 간격 */
+    }
+
+    /* 파일 선택 버튼 */
+    .file-btn {
+        display: inline-block;      /* 인라인 블록으로 표시 */
+        padding: 6px 14px;          /* 안쪽 여백 */
+        background: #f8f9fa;        /* 배경색 연한 회색 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 13px;            /* 글자 크기 */
+        color: #555;                /* 글자색 회색 */
+    }
+
+    /* 파일 선택 버튼 호버 */
+    .file-btn:hover {
+        background: #e9ecef;        /* 배경색 연한 회색으로 변경 */
+    }
+
+    /* 선택된 파일 목록 */
+    .file-list {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-wrap: wrap;            /* 공간 부족 시 자동 줄바꿈 */
+        gap: 6px;                   /* 파일 태그 사이 간격 */
+    }
+
+    /* 파일 태그 */
+    .file-tag {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        align-items: center;        /* 세로 중앙 정렬 */
+        gap: 4px;                   /* 파일명과 삭제 버튼 사이 간격 */
+        padding: 4px 10px;          /* 안쪽 여백 */
+        background: #e8f4fd;        /* 배경색 연한 파란색 */
+        border-radius: 20px;        /* 모서리 크게 둥글게 (알약 모양) */
+        font-size: 12px;            /* 글자 크기 */
+        color: #2980b9;             /* 글자색 파란색 */
+    }
+
+    /* 파일 태그 삭제 버튼 */
+    .file-tag button {
+        background: none;           /* 배경 없음 */
+        border: none;               /* 테두리 없음 */
+        color: #2980b9;             /* 글자색 파란색 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 12px;            /* 글자 크기 */
+        padding: 0;                 /* 안쪽 여백 없음 */
     }
 
     /* 댓글 작성 버튼 */
@@ -261,6 +393,19 @@
         color: #333;                /* 글자색 */
         margin-bottom: 8px;         /* 아래 여백 */
         line-height: 1.6;           /* 줄 간격 */
+    }
+
+    /* 댓글 첨부파일 링크 */
+    .comment-attachment-link {
+        display: inline-block;      /* 인라인 블록으로 표시 */
+        padding: 3px 10px;          /* 안쪽 여백 */
+        background: #e8f4fd;        /* 배경색 연한 파란색 */
+        border-radius: 20px;        /* 모서리 크게 둥글게 */
+        font-size: 12px;            /* 글자 크기 */
+        color: #2980b9;             /* 글자색 파란색 */
+        text-decoration: none;      /* 밑줄 없음 */
+        margin-right: 4px;          /* 오른쪽 여백 */
+        margin-bottom: 6px;         /* 아래 여백 */
     }
 
     /* 댓글 수정 입력창 */
@@ -323,9 +468,17 @@
     }
 </style>
 
+<!--post.id를 JS 변수에 담음 - Thymeleaf 변수를 JS에서 사용하기 위함-->
+<script th:inline="javascript">
+    const postId = /*[[${post.id}]]*/ 0;
+</script>
+
 <script>
-    /* 게시글 삭제 */
-    function deletePost(postId) {
+    /* 댓글용 선택된 파일 목록을 담는 배열 */
+    let commentFiles = [];
+
+    /* 게시글 삭제 버튼 클릭 이벤트 */
+    document.getElementById('deletePostBtn').addEventListener('click', function() {
         /* 삭제 확인 팝업 - 취소하면 함수 종료 */
         if (!confirm('게시글을 삭제하시겠습니까?')) return;
 
@@ -335,25 +488,71 @@
                 /* 삭제 성공 시 목록 페이지로 이동 */
                 location.href = '/posts';
             });
+    });
+
+    /* 댓글 파일 선택 시 실행 */
+    document.getElementById('commentFileInput').addEventListener('change', function() {
+        /* 선택된 파일들을 배열에 추가 */
+        Array.from(this.files).forEach(file => {
+            commentFiles.push(file);
+        });
+        /* 파일 목록 화면에 렌더링 */
+        renderCommentFileList();
+    });
+
+    /* 댓글 파일 목록 화면에 렌더링 */
+    function renderCommentFileList() {
+        const fileList = document.getElementById('commentFileList');
+        /* 선택된 파일마다 태그 형태로 표시 */
+        fileList.innerHTML = commentFiles.map((file, index) => `
+            <div class="file-tag">
+                <span>${file.name}</span>
+                <button onclick="removeCommentFile(${index})">✕</button>
+            </div>
+        `).join('');
     }
 
-    /* 댓글 작성 */
-    function createComment(postId) {
+    /* 댓글 선택된 파일 제거 */
+    function removeCommentFile(index) {
+        /* 해당 인덱스의 파일을 배열에서 제거 후 다시 렌더링 */
+        commentFiles.splice(index, 1);
+        renderCommentFileList();
+    }
+
+    /* 댓글 작성 버튼 클릭 이벤트 */
+    document.getElementById('commentSubmitBtn').addEventListener('click', async function() {
         /* 입력창에서 작성자, 내용 값을 가져옴 */
         const userName = document.getElementById('commentUserName').value;
         const content = document.getElementById('commentContent').value;
 
-        /* POST /api/posts/{postId}/comments 요청 */
-        fetch(`/api/posts/${postId}/comments`, {
+        /* POST /api/posts/{postId}/comments 요청 - 댓글 저장 */
+        const response = await fetch(`/api/posts/${postId}/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             /* 작성자, 내용을 JSON으로 변환해서 전송 */
             body: JSON.stringify({ userName, content })
-        }).then(() => {
-            /* 댓글 작성 성공 시 페이지 새로고침 */
-            location.reload();
         });
-    }
+
+        /* 저장된 댓글 객체를 JSON으로 파싱해서 comment 변수에 담음 */
+        const comment = await response.json();
+
+        /* 첨부파일이 있으면 하나씩 업로드 */
+        if (commentFiles.length > 0) {
+            for (const file of commentFiles) {
+                const fileData = new FormData();
+                /* 파일을 file 키로 담아서 전송 */
+                fileData.append('file', file);
+                /* POST /api/attachments/comment/{commentId} 요청 - 파일 업로드 */
+                await fetch(`/api/attachments/comment/${comment.id}`, {
+                    method: 'POST',
+                    body: fileData
+                });
+            }
+        }
+
+        /* 댓글 작성 완료 후 페이지 새로고침 */
+        location.reload();
+    });
 
     /* 댓글 수정 폼 표시 */
     function showEditForm(commentId) {
@@ -361,11 +560,13 @@
         document.getElementById(`content-${commentId}`).style.display = 'none';
         document.getElementById(`edit-${commentId}`).style.display = 'block';
         document.getElementById(`save-${commentId}`).style.display = 'inline-block';
+        /* 수정 중에는 수정 버튼 숨김 */
+        document.getElementById(`edit-btn-${commentId}`).style.display = 'none';
     }
 
     /* 댓글 수정 저장 */
-    function saveComment(commentId, postId) {
-        /* 수정 입력창에서 새 내용 가져옴 */
+    function saveComment(commentId) {
+        /* 수정 입력창에서 새 내용 가져옴 - textarea라서 태그 없이 텍스트만 가져옴 */
         const content = document.getElementById(`edit-${commentId}`).value;
 
         /* PUT /api/posts/{postId}/comments/{commentId} 요청 */
@@ -381,7 +582,7 @@
     }
 
     /* 댓글 삭제 */
-    function deleteComment(commentId, postId) {
+    function deleteComment(commentId) {
         /* 삭제 확인 팝업 - 취소하면 함수 종료 */
         if (!confirm('댓글을 삭제하시겠습니까?')) return;
 

@@ -1,10 +1,347 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+
+<!--이 HTML 파일에서 Thymeleaf 문법(th:)을 사용할 수 있게 선언-->
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--header.html의 head 조각을 가져와서 이 자리에 교체-->
+<head th:replace="fragments/header :: head"></head>
+
+<!--Quill 에디터 CSS - head 교체 후 별도로 추가-->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
 <body>
+
+<!--header.html의 header 조각을 가져와서 이 자리에 교체-->
+<header th:replace="fragments/header :: header"></header>
+
+<div class="container">
+
+    <h2 class="page-title">게시글 수정</h2>
+
+    <!--게시글 수정 폼-->
+    <form id="postForm">
+
+        <!--작성자 입력 - 기존 작성자 값이 미리 채워짐-->
+        <div class="form-group">
+            <label for="userName">작성자</label>
+            <input type="text" id="userName" name="userName"
+                   th:value="${post.userName}"
+                   placeholder="작성자를 입력하세요">
+        </div>
+
+        <!--제목 입력 - 기존 제목 값이 미리 채워짐-->
+        <div class="form-group">
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title"
+                   th:value="${post.title}"
+                   placeholder="제목을 입력하세요">
+        </div>
+
+        <!--Quill 에디터 영역-->
+        <div class="form-group">
+            <label>내용</label>
+            <!--Quill 에디터가 이 div에 생성됨-->
+            <div id="editor"></div>
+            <!--서버로 전송할 hidden input - 에디터 HTML 내용이 여기 담김-->
+            <input type="hidden" id="content" name="content">
+        </div>
+
+        <!--파일 첨부 영역-->
+        <div class="form-group">
+            <label>파일 첨부</label>
+            <div class="file-area">
+                <!--파일 선택 버튼 - 클릭 시 숨겨진 파일 입력창 열림-->
+                <label class="file-btn">
+                    파일 선택
+                    <!--multiple로 여러 파일 동시 선택 가능-->
+                    <input type="file" id="fileInput"
+                           multiple style="display:none;">
+                </label>
+                <!--선택된 파일 목록 표시 영역-->
+                <div id="fileList" class="file-list"></div>
+            </div>
+        </div>
+
+        <!--버튼 영역-->
+        <div class="form-actions">
+            <!--취소 버튼 - 상세 페이지로 이동-->
+            <a th:href="@{/posts/{id}(id=${post.id})}">
+                <button type="button" class="cancel-btn">취소</button>
+            </a>
+            <!--수정 완료 버튼 - submitForm() 함수 호출-->
+            <button type="button" class="submit-btn"
+                    th:onclick="|submitForm(${post.id})|">수정 완료</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* 페이지 제목 */
+    .page-title {
+        font-size: 20px;            /* 글자 크기 */
+        font-weight: bold;          /* 글자 굵게 */
+        margin-bottom: 20px;        /* 아래 여백 */
+        color: #222;                /* 글자색 진한 회색 */
+    }
+
+    /* 폼 전체 감싸는 박스 */
+    form {
+        background: white;          /* 배경색 흰색 */
+        border-radius: 10px;        /* 모서리 둥글게 */
+        padding: 30px;              /* 안쪽 여백 */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); /* 박스 그림자 */
+    }
+
+    /* 입력 항목 하나씩 감싸는 박스 */
+    .form-group {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-direction: column;     /* 세로 방향으로 배치 */
+        gap: 6px;                   /* 라벨과 입력창 사이 간격 */
+        margin-bottom: 20px;        /* 아래 여백 */
+    }
+
+    /* 라벨 */
+    .form-group label {
+        font-size: 14px;            /* 글자 크기 */
+        font-weight: 600;           /* 글자 굵기 semi-bold */
+        color: #555;                /* 글자색 회색 */
+    }
+
+    /* 텍스트 입력창 */
+    .form-group input[type="text"] {
+        padding: 10px 12px;         /* 안쪽 여백 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        font-size: 14px;            /* 글자 크기 */
+        outline: none;              /* 클릭 시 기본 테두리 제거 */
+    }
+
+    /* Quill 에디터 영역 높이 지정 */
+    #editor {
+        height: 300px;              /* 에디터 높이 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+
+    /* 파일 첨부 영역 */
+    .file-area {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-direction: column;     /* 세로 방향으로 배치 */
+        gap: 8px;                   /* 요소 사이 간격 */
+    }
+
+    /* 파일 선택 버튼 */
+    .file-btn {
+        display: inline-block;      /* 인라인 블록으로 표시 */
+        padding: 8px 16px;          /* 안쪽 여백 */
+        background: #f8f9fa;        /* 배경색 연한 회색 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+        color: #555;                /* 글자색 회색 */
+    }
+
+    /* 파일 선택 버튼 호버 */
+    .file-btn:hover {
+        background: #e9ecef;        /* 배경색 연한 회색으로 변경 */
+    }
+
+    /* 선택된 파일 목록 */
+    .file-list {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-wrap: wrap;            /* 공간 부족 시 자동 줄바꿈 */
+        gap: 6px;                   /* 파일 태그 사이 간격 */
+    }
+
+    /* 파일 태그 */
+    .file-tag {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        align-items: center;        /* 세로 중앙 정렬 */
+        gap: 4px;                   /* 파일명과 삭제 버튼 사이 간격 */
+        padding: 4px 10px;          /* 안쪽 여백 */
+        background: #e8f4fd;        /* 배경색 연한 파란색 */
+        border-radius: 20px;        /* 모서리 크게 둥글게 (알약 모양) */
+        font-size: 13px;            /* 글자 크기 */
+        color: #2980b9;             /* 글자색 파란색 */
+    }
+
+    /* 파일 태그 삭제 버튼 */
+    .file-tag button {
+        background: none;           /* 배경 없음 */
+        border: none;               /* 테두리 없음 */
+        color: #2980b9;             /* 글자색 파란색 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 13px;            /* 글자 크기 */
+        padding: 0;                 /* 안쪽 여백 없음 */
+    }
+
+    /* 버튼 영역 */
+    .form-actions {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        justify-content: flex-end;  /* 오른쪽 정렬 */
+        gap: 8px;                   /* 버튼 사이 간격 */
+    }
+
+    /* 취소 버튼 */
+    .cancel-btn {
+        padding: 10px 20px;         /* 안쪽 여백 */
+        background: #95a5a6;        /* 배경색 회색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+
+    /* 수정 완료 버튼 */
+    .submit-btn {
+        padding: 10px 20px;         /* 안쪽 여백 */
+        background: #2c3e50;        /* 배경색 진한 네이비 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+</style>
+
+<!--Quill 에디터 JS CDN-->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<!--기존 게시글 내용을 JS 변수에 담음 - Quill 에디터 초기값으로 사용-->
+<script th:inline="javascript">
+    const existingContent = /*[[${post.content}]]*/ '';
+</script>
+
+<script>
+    /* 선택된 파일 목록을 담는 배열 */
+    let selectedFiles = [];
+
+    /* Quill 에디터 초기화 */
+    const quill = new Quill('#editor', {
+        /* snow 테마 적용 - 툴바가 있는 기본 테마 */
+        theme: 'snow',
+        /* 툴바 버튼 설정 */
+        modules: {
+            toolbar: {
+                /* 툴바에 표시할 버튼 목록 */
+                container: [
+                    /* 굵기, 기울기, 밑줄 */
+                    ['bold', 'italic', 'underline'],
+                    /* 글자 크기 */
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                    /* 글자색 */
+                    [{ 'color': [] }],
+                    /* 이미지 삽입 */
+                    ['image']
+                ],
+                /* 이미지 버튼 클릭 시 실행할 핸들러 등록 */
+                handlers: {
+                    image: imageHandler
+                }
+            }
+        }
+    });
+
+    /* 기존 게시글 내용을 Quill 에디터에 초기값으로 설정 */
+    quill.root.innerHTML = existingContent;
+
+    /* 이미지 업로드 핸들러 - 이미지 버튼 클릭 시 실행 */
+    function imageHandler() {
+        /* 파일 선택 input 요소를 동적으로 생성 */
+        const input = document.createElement('input');
+        /* 파일 타입을 image/* 로 제한 */
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        /* 파일 선택 창 열기 */
+        input.click();
+
+        /* 파일 선택 시 실행 */
+        input.addEventListener('change', async () => {
+            const file = input.files[0];
+            /* FormData에 선택한 이미지 파일을 담음 */
+            const formData = new FormData();
+            formData.append('file', file);
+
+            /* POST /api/attachments/image 요청 - 이미지 업로드 */
+            const response = await fetch('/api/attachments/image', {
+                method: 'POST',
+                body: formData
+            });
+
+            /* 서버에서 반환한 이미지 URL을 JSON으로 파싱 */
+            const data = await response.json();
+
+            /* 현재 커서 위치를 가져옴 */
+            const range = quill.getSelection();
+
+            /* 커서 위치에 이미지 삽입 */
+            quill.insertEmbed(range.index, 'image', data.url);
+        });
+    }
+
+    /* 파일 선택 시 실행 */
+    document.getElementById('fileInput').addEventListener('change', function() {
+        /* 선택된 파일들을 배열에 추가 */
+        Array.from(this.files).forEach(file => {
+            selectedFiles.push(file);
+        });
+        /* 파일 목록 화면에 렌더링 */
+        renderFileList();
+    });
+
+    /* 선택된 파일 목록 화면에 렌더링 */
+    function renderFileList() {
+        const fileList = document.getElementById('fileList');
+        /* 선택된 파일마다 태그 형태로 표시 */
+        fileList.innerHTML = selectedFiles.map((file, index) => `
+            <div class="file-tag">
+                <span>${file.name}</span>
+                <!--삭제 버튼 클릭 시 해당 파일을 배열에서 제거-->
+                <button onclick="removeFile(${index})">✕</button>
+            </div>
+        `).join('');
+    }
+
+    /* 선택된 파일 제거 */
+    function removeFile(index) {
+        /* 해당 인덱스의 파일을 배열에서 제거 후 다시 렌더링 */
+        selectedFiles.splice(index, 1);
+        renderFileList();
+    }
+
+    async function submitForm(postId) {
+        /* Quill 에디터의 HTML 내용을 content 변수에 담음 */
+        const content = quill.root.innerHTML;
+
+        /* 폼에서 작성자, 제목 값을 가져옴 */
+        const userName = document.getElementById('userName').value;
+        const title = document.getElementById('title').value;
+
+        /* PUT /api/posts/{postId} 요청 - JSON으로 전송 */
+        await fetch(`/api/posts/${postId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            /* 작성자, 제목, 내용을 JSON으로 변환해서 전송 */
+            body: JSON.stringify({ userName, title, content })
+        });
+
+        /* 첨부파일이 있으면 하나씩 업로드 */
+        if (selectedFiles.length > 0) {
+            for (const file of selectedFiles) {
+                const fileData = new FormData();
+                fileData.append('file', file);
+                await fetch(`/api/attachments/post/${postId}`, {
+                    method: 'POST',
+                    body: fileData
+                });
+            }
+        }
+
+        /* 수정된 게시글 상세 페이지로 이동 */
+        location.href = `/posts/${postId}`;
+    }
+</script>
 
 </body>
 </html>

@@ -1,6 +1,7 @@
 package com.example.spring_example.controller;
 
 import com.example.spring_example.entity.Post;
+import com.example.spring_example.service.AttachmentService;
 import com.example.spring_example.service.CommentService;
 import com.example.spring_example.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class PostViewController {
     // PostService(게시글 서비스), CommentService(댓글 서비스) 타입을 담는 변수를 선언
     private final PostService postService;
     private final CommentService commentService;
+    private final AttachmentService attachmentService;
 
     // 게시글 목록 페이지
     @GetMapping     // GET /posts 요청이 오면 실행
@@ -33,7 +35,7 @@ public class PostViewController {
         Page<Post> posts = postService.getPagedPosts(page, size, sort, searchType, keyword);
         // Model에 posts, sort, searchType, keyword 값을 담음. Thymeleaf HTML에서 이 값들을 ${posts}, ${sort} 형태로 꺼내 쓸 수 있음
         model.addAttribute("posts", posts);
-        model.addAttribute("sort, sort");
+        model.addAttribute("sort", sort);
         model.addAttribute("searchType", searchType);
         model.addAttribute("keyword", keyword);
 
@@ -47,8 +49,13 @@ public class PostViewController {
     ){
         // postService한테 id로 게시글을 가져달라고 시키고, 그 결과를 Model에 post라는 이름으로 담음
         model.addAttribute("post", postService.getPost(id));
+
         // commentService한테 id로 댓글 목록을 가져달라고 시키고, 그 결과를 Model에 comments라는 이름으로 담음
         model.addAttribute("comments", commentService.getComments(id));
+
+        // attachmentService한테 id에 해당하는 게시글의 첨부파일 목록을 가져달라고 시키고, 결과를 Model에 attachments라는 이름으로 담음
+        model.addAttribute("attachments", attachmentService.getAttachmentsByPost(id));
+
         // templates/posts/detail.html 파일을 찾아서 렌더링
         return "posts/detail";
     }

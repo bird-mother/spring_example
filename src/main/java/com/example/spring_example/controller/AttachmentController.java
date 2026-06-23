@@ -1,6 +1,7 @@
 package com.example.spring_example.controller;
 
 import com.example.spring_example.entity.Attachment;
+import com.example.spring_example.repository.AttachmentRepository;
 import com.example.spring_example.service.AttachmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ public class AttachmentController {
     // 매개변수 선언
     // 파일 첨부하는 서비스를 담는 변수 선언
     private final AttachmentService attachmentService;
+    private final AttachmentRepository attachmentRepository;
 
     // 게시글 파일 업로드
     @PostMapping("/post/{postId}")      // 이 주소로 요청이 들어오면 아래 메서드 실행
@@ -102,4 +104,27 @@ public class AttachmentController {
                 .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
                 .body(resource);
     }
+
+    // 파일 다운로드
+    @GetMapping("/download/{id}")
+    // GET /api/attachments/download/{id} 요청이 오면 이 메서드를 실행
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) throws IOException {
+        // attachmentRepository한테 id로 첨부파일을 찾아달라고 시킴. 없으면 에러를 던짐
+        Attachment attachment = attachmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("첨부파일이 존재하지 않습니다. id : " + id));
+
+        // 파일 경로로 Path 객체를 만들어서 filePath 변수에 담음
+        Path filePath = Paths.get(attachment.getFilePath());
+
+        // 파일 경로로 Resource 객체를 만들어서 파일을 읽을 수 있게 함
+        Resource resource = new FileSystemResource(filePath);
+
+        // 파일을 다운로드 형태로 응답. Content-Disposition 헤더로 파일명을 지정
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + attachment.getOriginalFileName() + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                .body(resource);
+    }
+
 }
