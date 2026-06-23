@@ -1,10 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
 
+<!--이 HTML 파일에서 Thymeleaf 문법(th:)을 사용할 수 있게 선언-->
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--<head> 블록을 head라는 이름의 조각(fragment)으로 선언-->
+<head th:fragment="head">
+
+    <meta charset="UTF-8">
+
+    <title>소통 게시판</title>
+
+    <style>
+        /*모든 요소(*)에 적용*/
+        *{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body{
+            font-family: '맑은 고딕', sans-serif;
+            background-color: #ffb8f9;
+            color: #333;
+        }
+
+        header{
+            background-color: #d93aff;
+            color: deeppink;
+            padding: 18px 40px;
+            font-weight: bold;
+        }
+
+        .container{
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+    </style>
+</head
+>
+<body>
+<!--이 <header> 블록을 header라는 이름의 조각(fragment)으로 선언-->
+<header th:fragment="header">
+<!--    /posts 주소로 이동하는 링크를 흰색 글씨로 표시함.-->
+    <a href="/posts" style = "color : snow; text-decoration: none">소통 게시판</a>
+</header>
 </body>
 </html>
