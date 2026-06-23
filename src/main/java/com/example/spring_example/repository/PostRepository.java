@@ -1,6 +1,8 @@
 package com.example.spring_example.repository;
 
 import com.example.spring_example.entity.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -16,4 +18,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // Controller → Service → Repository → DB
 
     List<Post>findByTitleContaining(String keyword);    // post 중에 title에 keyword가 포함된 게시글을 찾아
+
+    // 작성자명에 keyword가 포함된 게시글을 페이징 해서 찾아달라 시키고 결과를 돌려줌
+    Page<Post> findByUserNameContaining(String userName, Pageable pageable);
+    // 제목에 keyword가 포함된 게시글을 페이징해서 찾아달라고 시키고 결과를 돌려줌
+    Page<Post> findByTitleContaining(String title, Pageable pageable);
 }

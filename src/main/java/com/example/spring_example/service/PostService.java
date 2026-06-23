@@ -31,11 +31,37 @@ public class PostService {
 //    Repository 의 메서드를 그대로 가져다 쓰는 부분이다
 //    Service는 Repository를 호출만 하고 실제 DB 처리는 JPA가 처리한다
 
-    // 게시글 전체 조회(페이징)
-    public Page<Post> getPagedPosts(int page, int size){        // 반환해라, page번째 페이지의 게시글 size개를
-                Pageable pageable = PageRequest.of(page, size, Sort.by("id")
-                        .descending());     //  만들어라, 페이지 요청 설정을, page번째, size개씩, id 내림차순으로
-        return postRepository.findAll(pageable);        // 반환해, postRepository에서 pageable 설정대로 조회한 게시글 목록을
+//    // 게시글 전체 조회(페이징)
+//    public Page<Post> getPagedPosts(int page, int size){        // 반환해라, page번째 페이지의 게시글 size개를
+//                Pageable pageable = PageRequest.of(page, size, Sort.by("id")
+//                        .descending());     //  만들어라, 페이지 요청 설정을, page번째, size개씩, id 내림차순으로
+//        return postRepository.findAll(pageable);        // 반환해, postRepository에서 pageable 설정대로 조회한 게시글 목록을
+//    }
+
+    // 게시글 목록 조회 (페이징 + 정렬 + 검색)
+    public Page<Post> getPagedPosts(    // post를 page로 돌려주는 메서드
+            int page, int size, String sort, String searchType, String keyword) {   // postPagePosts에 받을 매개변수
+
+        // 정렬 옵션 - 삼항연산자
+        Sort sortOption = sort.equals("viewCount")  // 정렬 옵션 선택 - sort가 viewCount인가?
+                ? Sort.by("viewCount").descending()     // sort가 viewCount면 조회순
+                : Sort.by("id").descending();   // sort가 id면 작성순
+
+        // 페이징 기능
+        // 페이지 번호(page), 페이지 크기(size), 정렬 방식(sortOption)을 설정해서 pageable 변수에 담음
+        Pageable pageable = PageRequest.of(page, size, sortOption);
+
+        // 검색 기능
+        if (keyword != null && !keyword.isEmpty()) {    // keyword(검색어)가 null이 아니고 빈 문자열도 아닌 경우에만 아래 코드를 실행
+            if (searchType.equals("userName")) {    // earchType이 "userName"이면
+                //postRepository한테 작성자명에 keyword가 포함된 게시글을 페이징해서 찾아달라고 시키고 결과를 돌려줘
+                return postRepository.findByUserNameContaining(keyword, pageable);
+            }
+            // searchType이 "userName"이 아니면 제목에 keyword가 포함된 게시글을 페이징해서 찾아달라고 시키고 결과를 돌려줌
+            return postRepository.findByTitleContaining(keyword, pageable);
+        }
+        // 검색어가 없으면 postRepository한테 전체 게시글을 페이징해서 가져달라고 시키고 결과를 돌려줌
+        return postRepository.findAll(pageable);
     }
 
     // 게시글 작성
@@ -66,7 +92,8 @@ public class PostService {
         post.setContent(updatedPost.getContent());  // updatedPost(새 데이터)에서 내용을 꺼내서, post(기존 게시글)의 내용 자리에 덮어쓴다
         post.setUserName(updatedPost.getUserName());    // updatedPost(새 데이터)에서 작성자를 꺼내서, post(기존 게시글)의 작성자 자리에 덮어쓴다
 
-        return postRepository.save(post);   // 내용이 바뀐 **post**를 postRepository(DB 창구)한테 건네서 .save(...)(저장해줘)라고 시킨다. 이 post는 이미 id가 있는 상태라서, DB에는 새로 추가(INSERT)가 아니라 기존 걸 덮어쓰는(UPDATE)로 처리된다. 저장된 결과를 그대로 돌려준다
+        // 내용이 바뀐 post를 postRepository한테 건네서 .save(저장해줘)라고 시킨다. 이 post는 이미 id가 있는 상태라서, DB에는 새로 추가(INSERT)가 아니라 기존 걸 덮어쓰는(UPDATE)로 처리된다. 저장된 결과를 그대로 돌려준다
+        return postRepository.save(post);
     }
 
     // 게시글 삭제
