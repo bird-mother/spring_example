@@ -1,6 +1,8 @@
 package com.example.spring_example.service;
 
 import com.example.spring_example.entity.Post;
+import com.example.spring_example.repository.AttachmentRepository;
+import com.example.spring_example.repository.CommentRepository;
 import com.example.spring_example.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -8,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;    // 트랜잭션 관리
 
 import java.util.List;
 
@@ -23,6 +26,13 @@ public class PostService {
     private final PostRepository postRepository;    // Repository 를 주입함
     // final 로 생성하는 이유는, 한번 주입받고 수정되지 않도록 고정하기 위해서 이다.
     // Spring이 처음 객체 생성할 때 딱 한번 주입해주고 끝
+
+    private final CommentRepository commentRepository;
+    // 게시글 삭제 시 댓글을 먼저 삭제해야 하기 때문에 PostService에서 CommentRepository가 필요함.
+    // final로 선언해서 한 번 주입받으면 바뀌지 않게 고정
+
+    private final AttachmentRepository attachmentRepository;
+    // 게시글 삭제 시 첨부파일을 먼저 삭제해야 하기 때문에 AttachmentRepository(첨부파일 DB 창구) 타입을 담는 attachmentRepository 변수를 선언
 
     // 게시글 전체 조회
     public List<Post> getAllPosts() {
@@ -53,7 +63,7 @@ public class PostService {
 
         // 검색 기능
         if (keyword != null && !keyword.isEmpty()) {    // keyword(검색어)가 null이 아니고 빈 문자열도 아닌 경우에만 아래 코드를 실행
-            if (searchType.equals("userName")) {    // earchType이 "userName"이면
+            if (searchType.equals("userName")) {    // searchType이 "userName"이면
                 //postRepository한테 작성자명에 keyword가 포함된 게시글을 페이징해서 찾아달라고 시키고 결과를 돌려줘
                 return postRepository.findByUserNameContaining(keyword, pageable);
             }
@@ -97,8 +107,19 @@ public class PostService {
     }
 
     // 게시글 삭제
-    public void deletePost(Long id){    // 반환 값이 없는(void) deletePost 메스드에 삭제할 게시글 id를 받는다
-        postRepository.deleteById(id);  // Repository에서 id가 같은 게시글을 삭제(deleteById) 하라고 시킴
+    @Transactional
+    // 이 메서드 안의 모든 DB 작업을 하나의 트랜잭션으로 묶음
+    public void deletePost(Long id) {
+        // 반환 값이 없는(void) deletePost 메서드. 삭제할 게시글 번호 id를 입력값으로 받음
+
+        attachmentRepository.deleteByPostId(id);
+        // attachmentRepository한테 id에 해당하는 게시글의 첨부파일 전체를 삭제해달라고 시킴
+
+        commentRepository.deleteByPostId(id);
+        // commentRepository한테 id에 해당하는 게시글의 댓글 전체를 삭제해달라고 시킴
+
+        postRepository.deleteById(id);
+        // postRepository한테 id에 해당하는 게시글을 삭제해달라고 시킴
     }
 
     // 게시글 검색(제목 키워드)

@@ -3,7 +3,7 @@ package com.example.spring_example.controller;
 import com.example.spring_example.entity.Post;
 import com.example.spring_example.service.PostService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -57,7 +57,7 @@ public class PostController {
 
     // 게시글 검색
     @GetMapping("/search")      // GET 방식으로 /api/posts/search 주소로 요청이 오면 이 메서드를 실행해
-    public List<Post> searchPost(@RequestParam String keyword){     // post를 list로 돌려주는 searchPost 메서드에서 URL에 붙은 keywird를 꺼내
+    public List<Post> searchPost(@RequestParam String keyword){     // post를 list로 돌려주는 searchPost 메서드에서 URL에 붙은 keyword를 꺼내
         return postService.searchPost(keyword);     // 반환해. postService가 keyword로 검색한 게시글 목록을
     }
 }

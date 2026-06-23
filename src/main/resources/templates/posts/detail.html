@@ -1,10 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+
+<!--이 HTML 파일에서 Thymeleaf 문법(th:)을 사용할 수 있게 선언-->
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--header.html의 head 조각을 가져와서 이 자리에 교체-->
+<head th:replace="fragments/header :: head"></head>
+
 <body>
+
+<!--header.html의 header 조각을 가져와서 이 자리에 교체-->
+<header th:replace="fragments/header :: header"></header>
+
+<div class="container">
+
+    <!--게시글 상세 영역-->
+    <div class="post-detail">
+
+        <!--게시글 제목-->
+        <h2 class="post-title" th:text="${post.title}"></h2>
+
+        <!--게시글 메타 정보-->
+        <div class="post-meta">
+            <span th:text="${post.userName}"></span>
+            <span th:text="'👁 ' + ${post.viewCount}"></span>
+        </div>
+
+        <!--게시글 내용-->
+        <div class="post-content" th:text="${post.content}"></div>
+
+        <!--게시글 버튼 영역-->
+        <div class="post-actions">
+            <!--수정 버튼 - 수정 페이지로 이동-->
+            <a th:href="@{/posts/{id}/edit(id=${post.id})}">
+                <button class="edit-btn">수정</button>
+            </a>
+            <!--삭제 버튼 - 클릭 시 삭제 확인 후 API 호출-->
+            <button class="delete-btn" th:onclick="|deletePost(${post.id})|">삭제</button>
+            <!--목록으로 돌아가기 버튼-->
+            <a href="/posts"><button class="list-btn">목록</button></a>
+        </div>
+    </div>
+
+    <!--댓글 영역-->
+    <div class="comment-section">
+
+        <h3>댓글</h3>
+
+        <!--댓글 작성 폼-->
+        <div class="comment-form">
+            <input type="text" id="commentUserName" placeholder="작성자">
+            <textarea id="commentContent" placeholder="댓글을 입력하세요"></textarea>
+            <button class="comment-submit-btn"
+                    th:onclick="|createComment(${post.id})|">댓글 작성</button>
+        </div>
+
+        <!--댓글 목록-->
+        <div class="comment-list">
+
+            <!--댓글이 없을 때 메시지-->
+            <div class="empty-msg"
+                 th:if="${comments.isEmpty()}">댓글이 없습니다.</div>
+
+            <!--댓글 반복 렌더링-->
+            <div class="comment-item"
+                 th:each="comment : ${comments}">
+
+                <div class="comment-header">
+                    <!--댓글 작성자-->
+                    <span class="comment-author"
+                          th:text="${comment.userName}"></span>
+                </div>
+
+                <!--댓글 내용 (기본 표시)-->
+                <div class="comment-content"
+                     th:id="|content-${comment.id}|"
+                     th:text="${comment.content}"></div>
+
+                <!--댓글 수정 입력창 (기본 숨김)-->
+                <textarea class="comment-edit-input"
+                          th:id="|edit-${comment.id}|"
+                          style="display:none;"
+                          th:text="${comment.content}"></textarea>
+
+                <div class="comment-actions">
+                    <!--수정 버튼-->
+                    <button class="comment-edit-btn"
+                            th:onclick="|showEditForm(${comment.id})|">수정</button>
+                    <!--수정 완료 버튼 (기본 숨김)-->
+                    <button class="comment-save-btn"
+                            th:id="|save-${comment.id}|"
+                            style="display:none;"
+                            th:onclick="|saveComment(${comment.id}, ${post.id})|">완료</button>
+                    <!--삭제 버튼-->
+                    <button class="comment-delete-btn"
+                            th:onclick="|deleteComment(${comment.id}, ${post.id})|">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 게시글 상세 박스 */
+    .post-detail {
+        background: white;          /* 배경색 흰색 */
+        border-radius: 10px;        /* 모서리 둥글게 */
+        padding: 30px;              /* 안쪽 여백 */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); /* 박스 그림자 */
+        margin-bottom: 24px;        /* 아래 여백 */
+    }
+
+    /* 게시글 제목 */
+    .post-title {
+        font-size: 22px;            /* 글자 크기 */
+        font-weight: bold;          /* 글자 굵게 */
+        margin-bottom: 12px;        /* 아래 여백 */
+        color: #222;                /* 글자색 진한 회색 */
+    }
+
+    /* 게시글 메타 정보 (작성자, 조회수) */
+    .post-meta {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        gap: 16px;                  /* 요소 사이 간격 */
+        font-size: 13px;            /* 글자 크기 */
+        color: #999;                /* 글자색 연한 회색 */
+        margin-bottom: 24px;        /* 아래 여백 */
+        padding-bottom: 16px;       /* 안쪽 아래 여백 */
+        border-bottom: 1px solid #f0f0f0; /* 아래 구분선 */
+    }
+
+    /* 게시글 내용 */
+    .post-content {
+        font-size: 15px;            /* 글자 크기 */
+        line-height: 1.8;           /* 줄 간격 */
+        color: #333;                /* 글자색 */
+        margin-bottom: 30px;        /* 아래 여백 */
+        min-height: 100px;          /* 최소 높이 */
+    }
+
+    /* 게시글 버튼 영역 */
+    .post-actions {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        gap: 8px;                   /* 버튼 사이 간격 */
+        justify-content: flex-end;  /* 오른쪽 정렬 */
+    }
+
+    /* 수정 버튼 */
+    .edit-btn {
+        padding: 8px 16px;          /* 안쪽 여백 */
+        background: #3498db;        /* 배경색 파란색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+
+    /* 삭제 버튼 */
+    .delete-btn {
+        padding: 8px 16px;          /* 안쪽 여백 */
+        background: #e74c3c;        /* 배경색 빨간색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+
+    /* 목록 버튼 */
+    .list-btn {
+        padding: 8px 16px;          /* 안쪽 여백 */
+        background: #95a5a6;        /* 배경색 회색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+    }
+
+    /* 댓글 영역 전체 */
+    .comment-section {
+        background: white;          /* 배경색 흰색 */
+        border-radius: 10px;        /* 모서리 둥글게 */
+        padding: 24px;              /* 안쪽 여백 */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); /* 박스 그림자 */
+    }
+
+    /* 댓글 제목 */
+    .comment-section h3 {
+        font-size: 16px;            /* 글자 크기 */
+        font-weight: bold;          /* 글자 굵게 */
+        margin-bottom: 16px;        /* 아래 여백 */
+        color: #333;                /* 글자색 */
+    }
+
+    /* 댓글 작성 폼 */
+    .comment-form {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        flex-direction: column;     /* 세로 방향으로 배치 */
+        gap: 8px;                   /* 요소 사이 간격 */
+        margin-bottom: 24px;        /* 아래 여백 */
+        padding-bottom: 24px;       /* 안쪽 아래 여백 */
+        border-bottom: 1px solid #f0f0f0; /* 아래 구분선 */
+    }
+
+    /* 댓글 작성자 입력창 */
+    .comment-form input {
+        padding: 8px 12px;          /* 안쪽 여백 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        font-size: 14px;            /* 글자 크기 */
+        outline: none;              /* 클릭 시 기본 테두리 제거 */
+        width: 200px;               /* 너비 고정 */
+    }
+
+    /* 댓글 내용 입력창 */
+    .comment-form textarea {
+        padding: 8px 12px;          /* 안쪽 여백 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        font-size: 14px;            /* 글자 크기 */
+        outline: none;              /* 클릭 시 기본 테두리 제거 */
+        resize: vertical;           /* 세로 방향으로만 크기 조절 가능 */
+        min-height: 80px;           /* 최소 높이 */
+    }
+
+    /* 댓글 작성 버튼 */
+    .comment-submit-btn {
+        padding: 8px 16px;          /* 안쪽 여백 */
+        background: #2c3e50;        /* 배경색 진한 네이비 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 14px;            /* 글자 크기 */
+        align-self: flex-end;       /* 오른쪽 정렬 */
+    }
+
+    /* 댓글 항목 */
+    .comment-item {
+        padding: 16px 0;            /* 위아래 안쪽 여백 */
+        border-bottom: 1px solid #f0f0f0; /* 아래 구분선 */
+    }
+
+    /* 댓글 헤더 (작성자) */
+    .comment-header {
+        margin-bottom: 6px;         /* 아래 여백 */
+    }
+
+    /* 댓글 작성자 */
+    .comment-author {
+        font-size: 13px;            /* 글자 크기 */
+        font-weight: bold;          /* 글자 굵게 */
+        color: #555;                /* 글자색 회색 */
+    }
+
+    /* 댓글 내용 */
+    .comment-content {
+        font-size: 14px;            /* 글자 크기 */
+        color: #333;                /* 글자색 */
+        margin-bottom: 8px;         /* 아래 여백 */
+        line-height: 1.6;           /* 줄 간격 */
+    }
+
+    /* 댓글 수정 입력창 */
+    .comment-edit-input {
+        width: 100%;                /* 너비 100% */
+        padding: 8px 12px;          /* 안쪽 여백 */
+        border: 1px solid #ddd;     /* 테두리 연한 회색 */
+        border-radius: 6px;         /* 모서리 둥글게 */
+        font-size: 14px;            /* 글자 크기 */
+        outline: none;              /* 클릭 시 기본 테두리 제거 */
+        resize: vertical;           /* 세로 방향으로만 크기 조절 가능 */
+        margin-bottom: 8px;         /* 아래 여백 */
+    }
+
+    /* 댓글 버튼 영역 */
+    .comment-actions {
+        display: flex;              /* 자식 요소를 가로로 배치 */
+        gap: 6px;                   /* 버튼 사이 간격 */
+        justify-content: flex-end;  /* 오른쪽 정렬 */
+    }
+
+    /* 댓글 수정 버튼 */
+    .comment-edit-btn {
+        padding: 4px 10px;          /* 안쪽 여백 */
+        background: #3498db;        /* 배경색 파란색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 4px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 12px;            /* 글자 크기 */
+    }
+
+    /* 댓글 수정 완료 버튼 */
+    .comment-save-btn {
+        padding: 4px 10px;          /* 안쪽 여백 */
+        background: #27ae60;        /* 배경색 초록색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 4px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 12px;            /* 글자 크기 */
+    }
+
+    /* 댓글 삭제 버튼 */
+    .comment-delete-btn {
+        padding: 4px 10px;          /* 안쪽 여백 */
+        background: #e74c3c;        /* 배경색 빨간색 */
+        color: white;               /* 글자색 흰색 */
+        border: none;               /* 테두리 없음 */
+        border-radius: 4px;         /* 모서리 둥글게 */
+        cursor: pointer;            /* 마우스 커서 손가락 모양 */
+        font-size: 12px;            /* 글자 크기 */
+    }
+
+    /* 댓글 없을 때 메시지 */
+    .empty-msg {
+        padding: 20px;              /* 안쪽 여백 */
+        text-align: center;         /* 가운데 정렬 */
+        color: #aaa;                /* 글자색 연한 회색 */
+    }
+</style>
+
+<script>
+    /* 게시글 삭제 */
+    function deletePost(postId) {
+        /* 삭제 확인 팝업 - 취소하면 함수 종료 */
+        if (!confirm('게시글을 삭제하시겠습니까?')) return;
+
+        /* DELETE /api/posts/{postId} 요청 */
+        fetch(`/api/posts/${postId}`, { method: 'DELETE' })
+            .then(() => {
+                /* 삭제 성공 시 목록 페이지로 이동 */
+                location.href = '/posts';
+            });
+    }
+
+    /* 댓글 작성 */
+    function createComment(postId) {
+        /* 입력창에서 작성자, 내용 값을 가져옴 */
+        const userName = document.getElementById('commentUserName').value;
+        const content = document.getElementById('commentContent').value;
+
+        /* POST /api/posts/{postId}/comments 요청 */
+        fetch(`/api/posts/${postId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            /* 작성자, 내용을 JSON으로 변환해서 전송 */
+            body: JSON.stringify({ userName, content })
+        }).then(() => {
+            /* 댓글 작성 성공 시 페이지 새로고침 */
+            location.reload();
+        });
+    }
+
+    /* 댓글 수정 폼 표시 */
+    function showEditForm(commentId) {
+        /* 댓글 내용 숨기고 수정 입력창 표시 */
+        document.getElementById(`content-${commentId}`).style.display = 'none';
+        document.getElementById(`edit-${commentId}`).style.display = 'block';
+        document.getElementById(`save-${commentId}`).style.display = 'inline-block';
+    }
+
+    /* 댓글 수정 저장 */
+    function saveComment(commentId, postId) {
+        /* 수정 입력창에서 새 내용 가져옴 */
+        const content = document.getElementById(`edit-${commentId}`).value;
+
+        /* PUT /api/posts/{postId}/comments/{commentId} 요청 */
+        fetch(`/api/posts/${postId}/comments/${commentId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            /* 새 내용을 JSON으로 변환해서 전송 */
+            body: JSON.stringify({ content })
+        }).then(() => {
+            /* 수정 성공 시 페이지 새로고침 */
+            location.reload();
+        });
+    }
+
+    /* 댓글 삭제 */
+    function deleteComment(commentId, postId) {
+        /* 삭제 확인 팝업 - 취소하면 함수 종료 */
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+        /* DELETE /api/posts/{postId}/comments/{commentId} 요청 */
+        fetch(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE' })
+            .then(() => {
+                /* 삭제 성공 시 페이지 새로고침 */
+                location.reload();
+            });
+    }
+</script>
 
 </body>
 </html>

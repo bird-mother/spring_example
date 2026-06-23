@@ -3,53 +3,53 @@ POST http://localhost:8080/api/posts
 Content-Type: application/json
 
 {
-  "title": "검색 테스트 게시글2",
-  "content": "검색 테스트 내용입니다2",
-  "userName": "작성자2"
+  "title": "테스트 게시글8",
+  "content": "테스트 내용입니다8",
+  "userName": "작성자8"
 }
 
 ### 게시글 수정 테스트
-PUT http://localhost:8080/api/posts/1
+PUT http://localhost:8080/api/posts/5
 Content-Type: application/json
 
 {
-  "title": "수정된 제목",
-  "content": "수정된 내용",
-  "userName": "수정자"
+  "title": "수정된 제목8",
+  "content": "수정된 내용8",
+  "userName": "수정자8"
 }
 
 ### 게시글 삭제 테스트
-DELETE http://localhost:8080/api/posts/2
+DELETE http://localhost:8080/api/posts/8
 
 
 #1번째 게시물을 삭제 했기 때문에, 댓글은 2번 부터 테스트
 
 ### 댓글 작성 테스트
-POST http://localhost:8080/api/posts/2/comments
+POST http://localhost:8080/api/posts/8/comments
 Content-Type: application/json
 
 {
-  "content": "두 번째 댓글입니다",
-  "userName": "홍길동"
+  "content": "테스트 댓글입니다8",
+  "userName": "작성자8"
 }
 
 ### 댓글 전체 조회 테스트
 GET http://localhost:8080/api/posts/2/comments
 
 ### 댓글 수정 테스트
-PUT http://localhost:8080/api/posts/2/comments/1
+PUT http://localhost:8080/api/posts/8/comments/1
 Content-Type: application/json
 
 {
-  "content": "수정된 댓글입니다"
+  "content": "수정된 댓글입니다8"
 }
 
 ### 댓글 삭제 테스트
-DELETE http://localhost:8080/api/posts/2/comments/1
+DELETE http://localhost:8080/api/posts/5/comments/4
 
 
 ### 단건 조회 (조회수 증가 확인)
-GET http://localhost:8080/api/posts/3
+GET http://localhost:8080/api/posts/6
 
 ### 게시글 페이징 조회 테스트
 GET http://localhost:8080/api/posts/paged?page=0&size=5
@@ -59,7 +59,7 @@ GET http://localhost:8080/api/posts/search?keyword=검색
 
 
 ### 게시글 파일 업로드 테스트
-POST http://localhost:8080/api/attachments/post/3
+POST http://localhost:8080/api/attachments/post/8
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -74,7 +74,7 @@ GET http://localhost:8080/api/attachments/post/3
 
 
 ### 댓글 파일 업로드 테스트
-POST http://localhost:8080/api/attachments/comments/2
+POST http://localhost:8080/api/attachments/comments/1
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -89,4 +89,4 @@ GET http://localhost:8080/api/attachments/comment/3
 
 
 ### 첨부파일 삭제 테스트
-DELETE http://localhost:8080/api/attachments/1
+DELETE http://localhost:8080/api/attachments/12
