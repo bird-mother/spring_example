@@ -56,3 +56,37 @@ GET http://localhost:8080/api/posts/paged?page=0&size=5
 
 ### 게시글 검색 테스트
 GET http://localhost:8080/api/posts/search?keyword=검색
+
+
+### 게시글 파일 업로드 테스트
+POST http://localhost:8080/api/attachments/post/3
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+테스트 파일 내용입니다
+--boundary--
+
+### 게시글 첨부파일 조회 테스트
+GET http://localhost:8080/api/attachments/post/3
+
+
+### 댓글 파일 업로드 테스트
+POST http://localhost:8080/api/attachments/comments/2
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+테스트 파일 내용입니다
+--boundary--
+
+### 댓글 첨부파일 조회 테스트
+GET http://localhost:8080/api/attachments/comment/3
+
+
+### 첨부파일 삭제 테스트
+DELETE http://localhost:8080/api/attachments/1
