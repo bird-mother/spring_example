@@ -22,7 +22,9 @@ public class Post {
     private String title;
 
     // 게시글 내용
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    // content 컬럼을 TEXT 타입으로 지정. Quill 에디터가 HTML 태그째로 저장하기 때문에
+    // varchar(255)로는 내용이 잘릴 수 있어서 TEXT 타입으로 변경
     private String content;
 
     // 작성자 이름

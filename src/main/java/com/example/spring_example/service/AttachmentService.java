@@ -115,4 +115,11 @@ public class AttachmentService {
         attachmentRepository.deleteById(attachmentId);
     }
 
+    // Quill 에디터용 이미지 업로드 메서드
+    // 이미지는 게시글/댓글에 종속되지 않고 에디터 본문에 삽입되는 방식이라
+    // post, comment 모두 null로 넘김
+    public Attachment uploadImage(MultipartFile file) throws IOException {
+        return saveFile(file, null, null);
+    }
+
 }

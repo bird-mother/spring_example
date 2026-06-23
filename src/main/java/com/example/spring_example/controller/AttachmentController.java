@@ -1,14 +1,23 @@
 package com.example.spring_example.controller;
 
 import com.example.spring_example.entity.Attachment;
-import com.example.spring_example.entity.Post;
 import com.example.spring_example.service.AttachmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController     // 이 클래스가 JSON으로 응답하는 컨트롤러임을 spring에게 알림
 @RequestMapping("/api/attachments")     // 이 컨트롤러의 기본 주소를 지정
@@ -53,5 +62,44 @@ public class AttachmentController {
     @DeleteMapping("/{attachmenId}")    // DELETE 방식의 주소 요청이 오면 이 메서드 실행
     public void deleteAttachment(@PathVariable Long attachmenId){       // 주소에 id를 꺼내 void 타입의 delete메서드를 만들어
         attachmentService.deleteAttachment(attachmenId);    // 서비스에 있는 삭제기능을 id번호 첨부파일에 실행
+    }
+
+    @Value("${file.upload.path}")
+    // application.properties의 file.upload.path 값을 uploadPath 변수에 주입받음
+    private String uploadPath;
+
+    // Quill 에디터용 이미지 업로드 - 업로드 후 이미지 URL 반환
+    @PostMapping("/image")
+    // POST /api/attachments/image 요청이 오면 이 메서드를 실행
+    public Map<String, String> uploadImage(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        // AttachmentService한테 이미지 업로드를 시키고 결과를 attachment에 담음
+        Attachment attachment = attachmentService.uploadImage(file);
+
+        // 반환할 URL을 담을 Map 생성
+        Map<String, String> result = new HashMap<>();
+
+        // 업로드된 이미지에 접근할 수 있는 URL을 result에 담음
+        result.put("url", "/api/attachments/image/" + attachment.getStoredFileName());
+
+        // URL이 담긴 result를 JSON 형태로 반환
+        return result;
+    }
+
+    // 업로드된 이미지 파일 반환
+    @GetMapping("/image/{fileName}")
+    // GET /api/attachments/image/{fileName} 요청이 오면 이 메서드를 실행
+    public ResponseEntity<Resource> getImage(
+            @PathVariable String fileName) throws IOException {
+        // uploadPath + fileName으로 파일 경로를 만들어서 Path 객체에 담음
+        Path filePath = Paths.get(uploadPath + fileName);
+
+        // 파일 경로로 Resource 객체를 만들어서 파일을 읽을 수 있게 함
+        Resource resource = new FileSystemResource(filePath);
+
+        // 파일을 응답으로 반환. Content-Type은 파일 타입에 맞게 자동으로 설정
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                .body(resource);
     }
 }
