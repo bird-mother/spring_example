@@ -19,7 +19,7 @@ Content-Type: application/json
 }
 
 ### 게시글 삭제 테스트
-DELETE http://localhost:8080/api/posts/1
+DELETE http://localhost:8080/api/posts/2
 
 
 #1번째 게시물을 삭제 했기 때문에, 댓글은 2번 부터 테스트
@@ -29,7 +29,7 @@ POST http://localhost:8080/api/posts/2/comments
 Content-Type: application/json
 
 {
-  "content": "세 번째 댓글입니다",
+  "content": "두 번째 댓글입니다",
   "userName": "홍길동"
 }
 
@@ -49,7 +49,7 @@ DELETE http://localhost:8080/api/posts/2/comments/1
 
 
 ### 단건 조회 (조회수 증가 확인)
-GET http://localhost:8080/api/posts/2
+GET http://localhost:8080/api/posts/3
 
 ### 게시글 페이징 조회 테스트
 GET http://localhost:8080/api/posts/paged?page=0&size=5

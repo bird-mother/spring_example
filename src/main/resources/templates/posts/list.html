@@ -1,10 +1,310 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+
+<!--이 HTML 파일에서 Thymeleaf 문법(th:)을 사용할 수 있게 선언-->
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--header.html의 head 조각을 가져와서 이 자리에 교체-->
+<head th:replace="fragments/header :: head"></head>
+
 <body>
+
+<!--header.html의 header 조각을 가져와서 이 자리에 교체-->
+<header th:replace="fragments/header :: header"></header>
+
+<div class="container">
+
+    <!--검색 필터 영역 - GET /posts로 폼 데이터 전송-->
+    <form th:action="@{/posts}" method="get">
+        <div class="filter-bar">
+
+            <!--검색 타입 드롭다운 - 현재 선택된 searchType과 일치하는 option을 선택 상태로 표시-->
+            <select name="searchType">
+                <option value="title"
+                        th:selected="${searchType == 'title'}">제목</option>
+                <option value="userName"
+                        th:selected="${searchType == 'userName'}">작성자</option>
+            </select>
+
+            <!--검색어 입력창 - Controller에서 받아온 keyword 값을 기본값으로 채움-->
+            <input type="text" name="keyword"
+                   th:value="${keyword}"
+                   placeholder="검색어를 입력하세요">
+
+            <!--정렬 방식 hidden 필드 - 정렬 버튼 클릭 시 JS로 값이 바뀜-->
+            <input type="hidden" name="sort" id="sortInput" th:value="${sort}">
+
+            <button type="submit">검색</button>
+        </div>
+    </form>
+
+    <!--정렬 버튼 영역-->
+    <div class="sort-bar">
+        <!--현재 sort 값이 id면 active 클래스 적용-->
+        <button class="sort-btn"
+                th:classappend="${sort == 'id'} ? 'active'"
+                onclick="setSort('id')">최신순</button>
+
+        <!--현재 sort 값이 viewCount면 active 클래스 적용-->
+        <button class="sort-btn"
+                th:classappend="${sort == 'viewCount'} ? 'active'"
+                onclick="setSort('viewCount')">조회순</button>
+    </div>
+
+    <!--글쓰기 버튼-->
+    <div class="top-bar">
+        <a href="/posts/new"><button class="write-btn">글쓰기</button></a>
+    </div>
+
+    <!--게시글 목록-->
+    <div class="post-list">
+
+        <!--posts.content = 현재 페이지의 게시글 목록을 반복해서 렌더링-->
+        <div class="post-item"
+             th:each="post : ${posts.content}"
+             th:onclick="|location.href='/posts/${post.id}'|">
+
+            <!--게시글 번호-->
+            <div class="post-id" th:text="${post.id}"></div>
+
+            <div class="post-content">
+                <!--게시글 제목-->
+                <div class="post-title" th:text="${post.title}"></div>
+
+                <div class="post-meta">
+                    <!--작성자-->
+                    <span th:text="${post.userName}"></span>
+                </div>
+            </div>
+
+            <!--조회수-->
+            <div class="post-views" th:text="'👁 ' + ${post.viewCount}"></div>
+        </div>
+
+        <!--게시글이 없을 때 메시지-->
+        <div class="empty-msg"
+             th:if="${posts.content.isEmpty()}">게시글이 없습니다.</div>
+    </div>
+
+    <!--페이징 영역-->
+    <div class="pagination">
+
+        <!--이전 페이지 버튼 - 첫 페이지면 비활성화-->
+        <button class="page-btn"
+                th:disabled="${posts.first}"
+                th:onclick="|goPage(${posts.number - 1})|">이전</button>
+
+        <!--페이지 번호 버튼 - 전체 페이지 수만큼 반복-->
+        <button class="page-btn"
+                th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}"
+                th:text="${i + 1}"
+                th:classappend="${i == posts.number} ? 'active'"
+                th:onclick="|goPage(${i})|"></button>
+
+        <!--다음 페이지 버튼 - 마지막 페이지면 비활성화-->
+        <button class="page-btn"
+                th:disabled="${posts.last}"
+                th:onclick="|goPage(${posts.number + 1})|">다음</button>
+    </div>
+
+</div>
+
+<style>
+    /* 검색/필터 영역 전체를 감싸는 박스 */
+    .filter-bar {
+        background: white;              /* 배경색 흰색 */
+        border-radius: 10px;            /* 모서리 둥글게 */
+        padding: 16px 20px;             /* 안쪽 여백 (위아래 16px / 좌우 20px) */
+        display: flex;                  /* 자식 요소를 가로로 배치 */
+        gap: 10px;                      /* 자식 요소 사이 간격 */
+        align-items: center;            /* 자식 요소 세로 중앙 정렬 */
+        flex-wrap: wrap;                /* 공간 부족 시 자동 줄바꿈 */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); /* 박스 그림자 */
+        margin-bottom: 16px;            /* 아래 여백 */
+    }
+
+    /* 드롭다운, 텍스트 입력창 공통 스타일 */
+    .filter-bar select,
+    .filter-bar input[type="text"] {
+        padding: 8px 12px;              /* 안쪽 여백 */
+        border: 1px solid #ddd;         /* 테두리 (1px 실선 연한 회색) */
+        border-radius: 6px;             /* 모서리 둥글게 */
+        font-size: 14px;                /* 글자 크기 */
+        outline: none;                  /* 클릭 시 기본 테두리 제거 */
+    }
+
+    /* 텍스트 입력창 */
+    .filter-bar input[type="text"] {
+        flex: 1;                        /* 남은 공간을 최대한 차지 */
+        min-width: 160px;               /* 최소 너비 */
+    }
+
+    /* 검색 버튼 */
+    .filter-bar button {
+        padding: 8px 18px;              /* 안쪽 여백 */
+        background: #2c3e50;            /* 배경색 진한 네이비 */
+        color: white;                   /* 글자색 흰색 */
+        border: none;                   /* 테두리 없음 */
+        border-radius: 6px;             /* 모서리 둥글게 */
+        cursor: pointer;                /* 마우스 커서 손가락 모양 */
+        font-size: 14px;                /* 글자 크기 */
+    }
+
+    /* 정렬 버튼 영역 */
+    .sort-bar {
+        display: flex;                  /* 자식 요소를 가로로 배치 */
+        gap: 8px;                       /* 버튼 사이 간격 */
+        margin-bottom: 12px;            /* 아래 여백 */
+    }
+
+    /* 정렬 버튼 기본 스타일 */
+    .sort-btn {
+        padding: 6px 16px;              /* 안쪽 여백 */
+        border: 1px solid #ccc;         /* 테두리 연한 회색 */
+        border-radius: 20px;            /* 모서리 크게 둥글게 (알약 모양) */
+        background: white;              /* 배경색 흰색 */
+        font-size: 13px;                /* 글자 크기 */
+        cursor: pointer;                /* 마우스 커서 손가락 모양 */
+        color: #555;                    /* 글자색 회색 */
+    }
+
+    /* 선택된 정렬 버튼 */
+    .sort-btn.active {
+        background: #2c3e50;            /* 배경색 진한 네이비 */
+        color: white;                   /* 글자색 흰색 */
+        border-color: #2c3e50;          /* 테두리색 배경색과 동일 */
+    }
+
+    /* 글쓰기 버튼 영역 */
+    .top-bar {
+        display: flex;                  /* 자식 요소를 가로로 배치 */
+        justify-content: flex-end;      /* 오른쪽 정렬 */
+        margin-bottom: 10px;            /* 아래 여백 */
+    }
+
+    /* 글쓰기 버튼 */
+    .write-btn {
+        padding: 8px 20px;              /* 안쪽 여백 */
+        background: #e74c3c;            /* 배경색 빨간색 */
+        color: white;                   /* 글자색 흰색 */
+        border: none;                   /* 테두리 없음 */
+        border-radius: 6px;             /* 모서리 둥글게 */
+        font-size: 14px;                /* 글자 크기 */
+        cursor: pointer;                /* 마우스 커서 손가락 모양 */
+    }
+
+    /* 게시글 목록 전체를 감싸는 박스 */
+    .post-list {
+        background: white;              /* 배경색 흰색 */
+        border-radius: 10px;            /* 모서리 둥글게 */
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08); /* 박스 그림자 */
+        overflow: hidden;               /* 자식 요소가 박스 밖으로 나가지 않게 */
+    }
+
+    /* 게시글 항목 하나 */
+    .post-item {
+        display: flex;                  /* 자식 요소를 가로로 배치 */
+        align-items: center;            /* 자식 요소 세로 중앙 정렬 */
+        padding: 16px 20px;             /* 안쪽 여백 */
+        border-bottom: 1px solid #f0f0f0; /* 아래 구분선 */
+        gap: 12px;                      /* 자식 요소 사이 간격 */
+        cursor: pointer;                /* 마우스 커서 손가락 모양 */
+        transition: background 0.15s;   /* 배경색 변경 시 0.15초 애니메이션 */
+    }
+
+    /* 게시글 항목 호버 */
+    .post-item:hover {
+        background: #f9fafc;            /* 마우스 올리면 연한 회색으로 배경색 변경 */
+    }
+
+    /* 게시글 번호 */
+    .post-id {
+        width: 36px;                    /* 고정 너비 */
+        text-align: center;             /* 가운데 정렬 */
+        font-size: 13px;                /* 글자 크기 */
+        color: #aaa;                    /* 글자색 연한 회색 */
+        flex-shrink: 0;                 /* 공간 부족해도 크기 줄이지 않음 */
+    }
+
+    /* 게시글 제목/작성자 영역 */
+    .post-content {
+        flex: 1;                        /* 남은 공간을 최대한 차지 */
+    }
+
+    /* 게시글 제목 */
+    .post-title {
+        font-size: 15px;                /* 글자 크기 */
+        font-weight: 600;               /* 글자 굵기 (semi-bold) */
+        margin-bottom: 4px;             /* 아래 여백 */
+        color: #222;                    /* 글자색 진한 회색 */
+    }
+
+    /* 작성자 */
+    .post-meta {
+        font-size: 12px;                /* 글자 크기 */
+        color: #999;                    /* 글자색 연한 회색 */
+    }
+
+    /* 조회수 */
+    .post-views {
+        font-size: 13px;                /* 글자 크기 */
+        color: #aaa;                    /* 글자색 연한 회색 */
+        flex-shrink: 0;                 /* 공간 부족해도 크기 줄이지 않음 */
+    }
+
+    /* 게시글 없을 때 메시지 */
+    .empty-msg {
+        padding: 30px;                  /* 안쪽 여백 */
+        text-align: center;             /* 가운데 정렬 */
+        color: #aaa;                    /* 글자색 연한 회색 */
+    }
+
+    /* 페이징 영역 */
+    .pagination {
+        display: flex;                  /* 자식 요소를 가로로 배치 */
+        justify-content: center;        /* 가운데 정렬 */
+        gap: 6px;                       /* 버튼 사이 간격 */
+        margin-top: 24px;               /* 위 여백 */
+    }
+
+    /* 페이지 버튼 */
+    .page-btn {
+        width: 34px;                    /* 너비 */
+        height: 34px;                   /* 높이 */
+        border: 1px solid #ddd;         /* 테두리 연한 회색 */
+        border-radius: 6px;             /* 모서리 둥글게 */
+        background: white;              /* 배경색 흰색 */
+        font-size: 13px;                /* 글자 크기 */
+        cursor: pointer;                /* 마우스 커서 손가락 모양 */
+        color: #555;                    /* 글자색 회색 */
+    }
+
+    /* 활성화된 페이지 버튼 */
+    .page-btn.active {
+        background: #2c3e50;            /* 배경색 진한 네이비 */
+        color: white;                   /* 글자색 흰색 */
+        border-color: #2c3e50;          /* 테두리색 배경색과 동일 */
+        font-weight: bold;              /* 글자 굵게 */
+    }
+</style>
+
+<script>
+    /* 정렬 버튼 클릭 시 실행 */
+    function setSort(sort) {
+        document.getElementById('sortInput').value = sort;  /* sortInput hidden 필드 값을 클릭한 sort 값으로 바꿈 */
+        document.querySelector('form').submit();            /* 폼을 제출해서 서버로 전송 */
+    }
+
+    /* 페이지 버튼 클릭 시 실행 */
+    function goPage(page) {
+        const form = document.querySelector('form');        /* 폼 요소를 가져옴 */
+        const pageInput = document.createElement('input'); /* 새 input 요소를 만듦 */
+        pageInput.type = 'hidden';                         /* hidden 타입으로 설정 */
+        pageInput.name = 'page';                           /* name을 page로 설정 */
+        pageInput.value = page;                            /* 클릭한 페이지 번호를 값으로 설정 */
+        form.appendChild(pageInput);                       /* 만든 input을 폼에 추가 */
+        form.submit();                                     /* 폼을 제출해서 서버로 전송 */
+    }
+</script>
 
 </body>
 </html>

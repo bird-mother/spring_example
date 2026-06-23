@@ -13,28 +13,32 @@
     <style>
         /*모든 요소(*)에 적용*/
         *{
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+            box-sizing: border-box;     /*padding과 border를 너비에 포함시킴*/
+            margin: 0;      /*바깥 여백 지정(0 = 없앰)*/
+            padding: 0;     /*안쪽 여백 지정(0 = 없앰)*/
         }
 
+        /*전체 페이지에 적용*/
         body{
-            font-family: '맑은 고딕', sans-serif;
-            background-color: #ffb8f9;
-            color: #333;
+            font-family: '맑은 고딕', sans-serif;       /*글꼴 설정*/
+            background-color: #ffb8f9;      /*배경색 지정*/
+            color: #333;        /*글자색 지정*/
         }
 
+        /*헤더 설정*/
         header{
-            background-color: #d93aff;
-            color: deeppink;
-            padding: 18px 40px;
-            font-weight: bold;
+            background-color: #d93aff;      /*헤더 배경색 지정*/
+            color: deeppink;        /*글자색 지정*/
+            padding: 18px 40px;     /*안쪽 여백 지정(위,아래 = 18px / 좌,우 = 40px)*/
+            font-size: 22px;        /*글자 크기 지정*/
+            font-weight: bold;      /*글자 굵게 지정*/
         }
 
+        /*컨테이너*/
         .container{
-            max-width: 900px;
-            margin: 30px auto;
-            padding: 0 20px;
+            max-width: 900px;       /*최대 너비 지정*/
+            margin: 30px auto;      /*위, 아래 30px 여백을 주고, 좌우는 중앙 정렬*/
+            padding: 0 20px;        /*안쪽 여백 지정(위,아래 = 0 / 좌,우 = 20px)*/
         }
 
     </style>
