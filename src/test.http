@@ -1,3 +1,5 @@
+#http://localhost:8080/posts
+
 ### 게시글 추가 테스트
 POST http://localhost:8080/api/posts
 Content-Type: application/json

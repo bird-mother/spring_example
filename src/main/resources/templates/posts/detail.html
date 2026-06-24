@@ -543,7 +543,7 @@
                 /* 파일을 file 키로 담아서 전송 */
                 fileData.append('file', file);
                 /* POST /api/attachments/comment/{commentId} 요청 - 파일 업로드 */
-                await fetch(`/api/attachments/comment/${comment.id}`, {
+                await fetch(`/api/attachments/comments/${comment.id}`, {
                     method: 'POST',
                     body: fileData
                 });
